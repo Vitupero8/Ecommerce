@@ -1,0 +1,12 @@
+<Solution>
+  <Project Path="CartService.Tests/CartService.Tests.csproj" Id="975cb216-26c0-4f9a-8e28-a6af52135f0a" />
+  <Project Path="CartService/CartService.csproj" Id="559bd485-d120-4a6b-9256-f01a4da0e030" />
+  <Project Path="CustomerService.Tests/CustomerService.Tests.csproj" Id="de403240-b046-4024-aa31-430e287da6cb" />
+  <Project Path="CustomerService/CustomerService.csproj" />
+  <Project Path="PaymentService.Tests/PaymentService.Tests.csproj" Id="29b3dfa9-a766-46db-994a-98ec1f2b2486" />
+  <Project Path="PaymentService/PaymentService.csproj" Id="00a17d28-d7ac-4673-b39e-3001a840b906" />
+  <Project Path="ProductService.Tests/ProductService.Tests.csproj" Id="4a4b885d-202b-4461-8319-05e5e61ec7af" />
+  <Project Path="ProductService/ProductService.csproj" Id="a1b7ccc8-b740-4820-819a-23ea15339f08" />
+  <Project Path="ShipmentService.Tests/ShipmentService.Tests.csproj" Id="bdc246dd-51ec-4b0f-af94-21a9f63983a4" />
+  <Project Path="ShipmentService/ShipmentService.csproj" Id="c680d2bf-960d-47dc-bf37-1ced2e3f110f" />
+</Solution>
