@@ -1,0 +1,108 @@
+CREATE DATABASE IF NOT EXISTS Ecommerce;
+USE Ecommerce;
+
+CREATE TABLE IF NOT EXISTS Customers (
+    CustomerID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(50) NOT NULL,
+    Surname VARCHAR(50) NOT NULL,
+    Phone VARCHAR(20) NOT NULL,
+    Email VARCHAR(255) UNIQUE NOT NULL,
+    Address VARCHAR(255) NOT NULL,
+    PasswordHash VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS Product (
+    ProductID INT AUTO_INCREMENT PRIMARY KEY,
+    ProductName VARCHAR(50) NOT NULL,
+    ProductType VARCHAR(50) NOT NULL,
+    ProductPrice DECIMAL(10,2) NOT NULL,
+    ProductStockQuantity INT NOT NULL
+);
+
+
+CREATE DATABASE IF NOT EXISTS CartService;
+USE CartService;
+
+CREATE TABLE IF NOT EXISTS Carts (
+    CartID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT NOT NULL,
+    TotalPrice DECIMAL(10,2) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS CartItems (
+    CartItemID INT AUTO_INCREMENT PRIMARY KEY,
+    CartID INT NOT NULL,
+    ProductID INT NOT NULL,
+    Quantity INT NOT NULL,
+    Price DECIMAL(10,2) NOT NULL,
+
+    FOREIGN KEY (CartID) REFERENCES Carts(CartID)
+);
+
+
+CREATE DATABASE IF NOT EXISTS PaymentService;
+USE PaymentService;
+
+CREATE TABLE IF NOT EXISTS Orders (
+    OrderId INT AUTO_INCREMENT PRIMARY KEY,
+    CartID INT NOT NULL,
+    CustomerID INT NOT NULL,
+    TotalPrice DECIMAL(10,2) NOT NULL,
+    Status VARCHAR(20) NOT NULL,
+    CreatedAt DATETIME NOT NULL,
+    PayPalOrderID VARCHAR(50)
+);
+
+CREATE TABLE IF NOT EXISTS OrderItem (
+    OrderItemID INT AUTO_INCREMENT PRIMARY KEY,
+    OrderID INT NOT NULL,
+    ProductID INT NOT NULL,
+    Price DECIMAL(10,2) NOT NULL,
+    Quantity INT NOT NULL,
+
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderId)
+);
+
+CREATE TABLE IF NOT EXISTS Payments (
+    PaymentID INT AUTO_INCREMENT PRIMARY KEY,
+    OrderID INT NOT NULL,
+    Amount DECIMAL(10,2) NOT NULL,
+    Status VARCHAR(30) NOT NULL,
+    PaymentMethod VARCHAR(30) NOT NULL,
+    ExternalPaymentID VARCHAR(100),
+    CreatedAt DATETIME NOT NULL,
+
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderId)
+);
+
+CREATE TABLE IF NOT EXISTS PaymentMethods (
+    PaymentMethodID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT NOT NULL,
+    MethodType VARCHAR(30) NOT NULL,
+    Identifier VARCHAR(100),
+    IsDefault BOOLEAN NOT NULL
+);
+
+
+CREATE DATABASE IF NOT EXISTS ShipmentService;
+USE ShipmentService;
+
+CREATE TABLE IF NOT EXISTS Shipments (
+    ShipmentID INT AUTO_INCREMENT PRIMARY KEY,
+    OrderID INT NOT NULL,
+    CustomerID INT NOT NULL,
+    Name VARCHAR(50) NOT NULL,
+    Surname VARCHAR(50) NOT NULL,
+    Phone VARCHAR(20) NOT NULL,
+    Address VARCHAR(255) NOT NULL,
+    Status VARCHAR(50) NOT NULL,
+    CreatedAt DATETIME NOT NULL
+);
+
+USE Ecommerce;
+
+INSERT INTO Product
+    (ProductName, ProductType, ProductPrice, ProductStockQuantity)
+VALUES
+    ('Logitech G502', 'Mouse', 59.99, 25),
+    ('Test Laptop', 'Laptop', 999.99, 10);
