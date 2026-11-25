@@ -6,3 +6,5 @@
 
 appsettings.Development.json
 secrets.json
+# Docker secrets
+.env

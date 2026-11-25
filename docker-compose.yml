@@ -1,0 +1,134 @@
+# =========================================================
+# E-commerce microservices - full local environment
+# Start:  docker compose up --build -d
+# Stop:   docker compose down        (keeps database data)
+# Reset:  docker compose down -v     (DELETES database data)
+# Values like ${JWT_KEY} are read from the .env file next to this file.
+# =========================================================
+name: ecommerce
+
+services:
+
+  # ---------------- Database ----------------
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # Only the init script uses these, to create the service users
+      CUSTOMER_DB_PASSWORD: ${CUSTOMER_DB_PASSWORD}
+      PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
+      CART_DB_PASSWORD: ${CART_DB_PASSWORD}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      SHIPMENT_DB_PASSWORD: ${SHIPMENT_DB_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./Database/Ecommerce.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./Database/docker-init/02-users.sh:/docker-entrypoint-initdb.d/02-users.sh:ro
+    # No "ports:" - MySQL is reachable only inside the Docker network.
+    healthcheck:
+      # Healthy = real TCP connection works AND the service users exist.
+      # (The temporary init server has networking off, so this can't pass too early.)
+      # $$ = a literal $ for the shell inside the container.
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -uproduct_user -p\"$$PRODUCT_DB_PASSWORD\" -e 'SELECT 1' > /dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # ---------------- CustomerService ----------------
+  customer-service:
+    build:
+      context: .
+      dockerfile: CustomerService/Dockerfile
+    image: customer-service:latest
+    environment:
+      ConnectionStrings__CustomerDb: "Server=mysql;Port=3306;Database=Ecommerce;User=customer_user;Password=${CUSTOMER_DB_PASSWORD};"
+      Jwt__Key: ${JWT_KEY}
+    ports:
+      - "5213:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ---------------- ProductService ----------------
+  product-service:
+    build:
+      context: .
+      dockerfile: ProductService/Dockerfile
+    image: product-service:latest
+    environment:
+      ConnectionStrings__ProductDb: "Server=mysql;Port=3306;Database=Ecommerce;User=product_user;Password=${PRODUCT_DB_PASSWORD};"
+    ports:
+      - "5181:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ---------------- PaymentService ----------------
+  payment-service:
+    build:
+      context: .
+      dockerfile: PaymentService/Dockerfile
+    image: payment-service:latest
+    environment:
+      ConnectionStrings__PaymentDb: "Server=mysql;Port=3306;Database=PaymentService;User=payment_user;Password=${PAYMENT_DB_PASSWORD};"
+      Jwt__Key: ${JWT_KEY}
+      PayPal__ClientId: ${PAYPAL_CLIENT_ID}
+      PayPal__ClientSecret: ${PAYPAL_CLIENT_SECRET}
+      # PayPal redirects the BROWSER here, so it must be the host-published address
+      PayPal__ReturnUrl: "http://localhost:5079/api/Order/paypal-success"
+      PayPal__CancelUrl: "http://localhost:5079/api/Order/paypal-cancel"
+    ports:
+      - "5079:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ---------------- CartService ----------------
+  cart-service:
+    build:
+      context: .
+      dockerfile: CartService/Dockerfile
+    image: cart-service:latest
+    environment:
+      ConnectionStrings__CartDb: "Server=mysql;Port=3306;Database=CartService;User=cart_user;Password=${CART_DB_PASSWORD};"
+      Jwt__Key: ${JWT_KEY}
+      # Service names instead of localhost; internal port 8080, plain HTTP
+      Services__ProductService: "http://product-service:8080/"
+      Services__CustomerService: "http://customer-service:8080/"
+      Services__PaymentService: "http://payment-service:8080/"
+    ports:
+      - "5042:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      product-service:
+        condition: service_started
+      customer-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+
+  # ---------------- ShipmentService ----------------
+  shipment-service:
+    build:
+      context: .
+      dockerfile: ShipmentService/Dockerfile
+    image: shipment-service:latest
+    environment:
+      ConnectionStrings__ShipmentDb: "Server=mysql;Port=3306;Database=ShipmentService;User=shipment_user;Password=${SHIPMENT_DB_PASSWORD};"
+      Jwt__Key: ${JWT_KEY}
+      Services__PaymentService: "http://payment-service:8080/"
+      Services__CustomerService: "http://customer-service:8080/"
+    ports:
+      - "5118:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      customer-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+
+volumes:
+  mysql-data:

@@ -78,8 +78,8 @@ namespace PaymentService.Services
 
                 application_context = new
                 {
-                    return_url = "https://localhost:7112/api/Order/paypal-success",
-                    cancel_url = "https://localhost:7112/api/Order/paypal-cancel"
+                    return_url = _configuration["PayPal:ReturnUrl"] ?? throw new InvalidOperationException("PayPal:ReturnUrl is not configured."),
+                    cancel_url = _configuration["PayPal:CancelUrl"] ?? throw new InvalidOperationException("PayPal:CancelUrl is not configured.")
                 }
             };
 

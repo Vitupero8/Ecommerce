@@ -5,16 +5,36 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi;
 
 
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header
+    });
+    options.AddSecurityRequirement(document =>
+    new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
+
 
 // Add services to the container.
-builder.Services.AddDbContext<CartDbContext>(options => options.UseMySQL("Server=localhost;Port=3306;Database=CartService;User=root;Password=Route123!;"));
+builder.Services.AddDbContext<CartDbContext>(options => options.UseMySQL(builder.Configuration.GetConnectionString("CartDb") ?? throw new InvalidOperationException("Connection string 'CartDb' is not configured.")));
 builder.Services.AddHttpClient<ProductServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7138/");
+    client.BaseAddress = new Uri(builder.Configuration["Services:ProductService"] ?? throw new InvalidOperationException("Services:ProductService is not configured."));
 })
 .AddStandardResilienceHandler(options =>
 {
@@ -27,7 +47,7 @@ builder.Services.AddHttpClient<ProductServiceClient>(client =>
 
 builder.Services.AddHttpClient<ProductServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7138/");
+    client.BaseAddress = new Uri(builder.Configuration["Services:ProductService"] ?? throw new InvalidOperationException("Services:ProductService is not configured."));
 })
 .AddStandardResilienceHandler(options =>
 {
@@ -40,7 +60,7 @@ builder.Services.AddHttpClient<ProductServiceClient>(client =>
 
 builder.Services.AddHttpClient<CustomerServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7252/");
+    client.BaseAddress = new Uri(builder.Configuration["Services:CustomerService"] ?? throw new InvalidOperationException("Services:CustomerService is not configured."));
 })
 .AddStandardResilienceHandler(options =>
 {
@@ -53,7 +73,7 @@ builder.Services.AddHttpClient<CustomerServiceClient>(client =>
 
 builder.Services.AddHttpClient<PaymentServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7112/");
+    client.BaseAddress = new Uri(builder.Configuration["Services:PaymentService"] ?? throw new InvalidOperationException("Services:PaymentService is not configured."));
 })
 .AddStandardResilienceHandler(options =>
 {
@@ -77,7 +97,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes("THIS-IS-A-DEVELOPMENT-SECRET-CHANGE-IT")
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured."))
             )
         };
     });
@@ -85,17 +105,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+//builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+/*if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-}
+}*/
 
-app.UseHttpsRedirection();
+app.UseSwagger();
+app.UseSwaggerUI();
+
+//app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

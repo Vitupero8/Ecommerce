@@ -7,12 +7,30 @@ using CustomerService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header
+    });
+
+    
+   
+});
 
 // Add services to the container.
 
-builder.Services.AddDbContext<CustomerDbContext>(options => options.UseMySQL("Server=localhost;Port=3306;Database=Ecommerce;User=root;Password=Route123!;"));
+builder.Services.AddDbContext<CustomerDbContext>(options => options.UseMySQL(builder.Configuration.GetConnectionString("CustomerDb") ?? throw new InvalidOperationException("Connection string 'CustomerDb' is not configured.")));
 builder.Services.AddScoped<IPasswordHasher<Customer>, PasswordHasher<Customer>>();
 builder.Services.AddScoped<JwtService>();
 
@@ -33,22 +51,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+
 
 var app = builder.Build();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
 
-app.UseHttpsRedirection();
 
-app.UseAuthorization();
+//app.UseHttpsRedirection();
+
+
 
 app.MapControllers();
 

@@ -1,0 +1,18 @@
+# Build output from Visual Studio on Windows - must never enter a Linux build
+**/bin/
+**/obj/
+**/.vs/
+.vs/
+
+# Git history and local-only files
+.git/
+**/*.user
+*.suo
+
+# Local secrets and dev settings - containers get config from environment variables
+**/appsettings.Development.json
+**/secrets.json
+.env
+
+# Test projects are not part of the runtime images
+*.Tests/
